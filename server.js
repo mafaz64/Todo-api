@@ -67,6 +67,27 @@ app.get('/todos', function (req, res) {
  	res.json(body);
  });
 
+//DELETE /todos/:id
+app.delete('/todos/:id', function (req, res) {
+	var todoId = parseInt(req.params.id,10);
+	var matchedTodo;
+
+	//Find the todo item by id
+	matchedTodo = _.findWhere(todos, {id: todoId});
+
+	if(matchedTodo) {
+		//Delete the found item from list
+		//console.log('about to delete matchedTodo');
+		todos = _.without(todos, matchedTodo);
+		//retun the deleted item
+		return res.json(matchedTodo);
+	} else {
+		//return res.status(404).send('No match found for id: ' + todoId);
+		res.status(404).json({"error": "No todo found with this id"});
+	}
+});
+
+
 app.get('/', function (req, res) {
 	res.send('Todo API Root');
 });
