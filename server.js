@@ -1,20 +1,25 @@
 var express = require('express');
+var bodyParser = require('body-parser');
 var app = express();
 var PORT = process.env.PORT || 3000;
+var todos = [];
+var todoNextId = 1;
+// var todos = [{
+// 	id: 1,
+// 	description: 'Meet mom for lunch',
+// 	completed: false
+// }, {
+// 	id: 2,
+// 	description: 'Go to super market',
+// 	completed: false
+// }, {
+// 	id: 3,
+// 	description: 'Pay MLGW bill',
+// 	completed: true
+// }];
 
-var todos = [{
-	id: 1,
-	description: 'Meet mom for lunch',
-	completed: false
-}, {
-	id: 2,
-	description: 'Go to market',
-	completed: false
-}, {
-	id: 3,
-	description: 'Pay MLGW bill',
-	completed: true
-}];
+//Now any time a json request comes in express will be able to parse it and we will be ablw to access it via req.body
+app.use(bodyParser.json());
 
 //GET todos
 app.get('/todos', function (req, res) {
@@ -53,10 +58,23 @@ app.get('/todos', function (req, res) {
 	// if(matchedTodo) {
 	// 	res.json(matchedTodo);
 	// } else {
-	// 	res.status(404).send('No match found for requested id');
+	// 	res.status(404).send('No match found for todo id of ' + todoId);
 	// }
 	
 	//res.send('Asking for todo with id of ' + req.params.id)
+ });
+
+ //POST /todos
+ app.post('/todos', function (req, res) {
+ 	var body = req.body;
+ 	//console.log('description: ' + body.description);
+ 	body.id = todoNextId;
+
+ 	//todos.push({id: todoNextId, description: body.description, completed: body.completed});
+ 	todos.push(body);
+ 	//Increment the todoNextId
+ 	todoNextId++;
+ 	res.json(body);
  });
 
 app.get('/', function (req, res) {
