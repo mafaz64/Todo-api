@@ -4,6 +4,7 @@ var app = express();
 var PORT = process.env.PORT || 3000;
 var todos = [];
 var todoNextId = 1;
+var _ = require('underscore');
 // var todos = [{
 // 	id: 1,
 // 	description: 'Meet mom for lunch',
@@ -30,44 +31,33 @@ app.get('/todos', function (req, res) {
  app.get('/todos/:id', function (req, res) {
  	//Since req.params are strings by default converted it to int for comparision using parseInt
  	var todoId = parseInt(req.params.id,10);
- 	var matchFound = false;
- 	//console.log('Requested todo id is:' + todoId);
+ 	var matchedTodo;
 
-	for (i = 0; i < todos.length; i++) {
-		//console.log('In for loop todo['+ i +']: ' + todos[i].id);
-		if (todos[i].id === todoId) {
-			matchFound = true;
-			//console.log('Match found with todo['+i+']');
-			res.json(todos[i]);
-			break;
-		}
-	}
-	
-	if(!matchFound) {
-		res.status(404).send('No match found for todoId of ' + todoId);
+	//Now we will use functions from underscore. Documentation can be found at http://underscorejs.org/
+	matchedTodo = _.findWhere(todos, {id: todoId});
+
+	if(matchedTodo) {
+		res.json(matchedTodo);
+	} else {
+		res.status(404).send('No match found for todo id of ' + todoId);
 	}
 
-	//NOTE: The course used the forEach loop shown below
-	// var matchedTodo;
-	// todos.forEach(function(todo) {
-	// 	if(todoId === todo.id) {
-	// 		matchedTodo = todo;
-	// 	}
-	// });
-
-	// if(matchedTodo) {
-	// 	res.json(matchedTodo);
-	// } else {
-	// 	res.status(404).send('No match found for todo id of ' + todoId);
-	// }
-	
-	//res.send('Asking for todo with id of ' + req.params.id)
  });
 
  //POST /todos
  app.post('/todos', function (req, res) {
  	var body = req.body;
  	//console.log('description: ' + body.description);
+ 	//Used underscore just to pick the data keys we want to use from the passed object
+ 	body = _.pick(body, 'description', 'completed');
+
+ 	//Doing data validation using functions from underscore
+ 	if(!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
+ 		return res.status(400).send('Passed data is not valid,');
+ 	}
+ 	//Trim the description before we save it.
+ 	body.description = body.description.trim();
+ 	
  	body.id = todoNextId;
 
  	//todos.push({id: todoNextId, description: body.description, completed: body.completed});
