@@ -87,6 +87,44 @@ app.delete('/todos/:id', function (req, res) {
 	}
 });
 
+//PUT /todos/:id
+app.put('/todos/:id', function (req, res) {
+	var todoId = parseInt(req.params.id, 10);
+	var matchedTodo = _.findWhere(todos, {id: todoId});
+
+	var body = _.pick(req.body, 'description', 'completed');
+	var validAttributes = {};
+
+	//If no mathed item found just return error.
+	if(!matchedTodo) {
+		return res.status(404).json({"error":"No todo item found for passed id"});
+	}
+
+	if(body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
+		//Add to validAttributes
+		validAttributes.completed = body.completed;
+	} else if (body.hasOwnProperty('completed')) {
+		//Something is wrong
+		return res.status(400).send();
+	}
+
+	if(body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
+		//console.log('About to set description in validAttrubutes');
+		validAttributes.description = body.description;
+	} else if (body.hasOwnProperty('description')) {
+		//Something is wrong
+		console.log('Somthing went wrong');
+		return res.status(400).send();
+	}
+
+	//Every thing seems to be in order. Update the todo item using extends method from underscore
+	_.extend(matchedTodo, validAttributes);
+	res.json(matchedTodo);
+
+});
+
+
+
 
 app.get('/', function (req, res) {
 	res.send('Todo API Root');
