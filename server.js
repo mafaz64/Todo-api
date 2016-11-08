@@ -22,9 +22,21 @@ var _ = require('underscore');
 //Now any time a json request comes in express will be able to parse it and we will be ablw to access it via req.body
 app.use(bodyParser.json());
 
-//GET todos
+//GET todos?completed=true
 app.get('/todos', function (req, res) {
-	res.json(todos);
+	var queryParams = req.query;
+	var filteredTodos = todos;
+	//console.log(queryParams);
+
+	if(queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
+		//where function returns the list of todos where competed is true
+		filteredTodos = _.where(filteredTodos, {completed:true});
+	} else if(queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
+		filteredTodos = _.where(filteredTodos, {completed:false});
+	}
+
+	
+	res.json(filteredTodos);
 });
 
  //GET todos/:id
