@@ -5,6 +5,8 @@ var PORT = process.env.PORT || 3000;
 var todos = [];
 var todoNextId = 1;
 var _ = require('underscore');
+var db = require('./db.js');
+
 // var todos = [{
 // 	id: 1,
 // 	description: 'Meet mom for lunch',
@@ -23,82 +25,116 @@ var _ = require('underscore');
 app.use(bodyParser.json());
 
 //GET todos?completed=true&q=work
-app.get('/todos', function (req, res) {
+app.get('/todos', function(req, res) {
 	var queryParams = req.query;
 	var filteredTodos = todos;
 	//console.log(queryParams);
 
-	if(queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
+	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
 		//The function where() returns the list of todos where competed is true. See underscodejs.org for details
-		filteredTodos = _.where(filteredTodos, {completed:true});
-	} else if(queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
-		filteredTodos = _.where(filteredTodos, {completed:false});
+		filteredTodos = _.where(filteredTodos, {
+			completed: true
+		});
+	} else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
+		filteredTodos = _.where(filteredTodos, {
+			completed: false
+		});
 	}
 
 	//Use the filteredTodos and search for the items containg description matching the passed description for q value
-	if(queryParams.hasOwnProperty('q') && queryParams.q.trim().length > 0) {
+	if (queryParams.hasOwnProperty('q') && queryParams.q.trim().length > 0) {
 		//The function filter() returns the list of todos where code in the anonymous function evalutes to true. See underscodejs.org for details
-		filteredTodos = _.filter(filteredTodos, function (todo) {
+		filteredTodos = _.filter(filteredTodos, function(todo) {
 			//Note the indexOf() function search in case sensitive so we used toLowerCase() function 
 			return todo.description.toLowerCase().indexOf(queryParams.q.toLowerCase()) > -1
-			
+
 		});
-		
+
 	}
 
-	
+
 	res.json(filteredTodos);
 });
 
- //GET todos/:id
- app.get('/todos/:id', function (req, res) {
- 	//Since req.params are strings by default converted it to int for comparision using parseInt
- 	var todoId = parseInt(req.params.id,10);
- 	var matchedTodo;
+//GET todos/:id
+app.get('/todos/:id', function(req, res) {
+	//Since req.params are strings by default converted it to int for comparision using parseInt
+	var todoId = parseInt(req.params.id, 10);
+	var matchedTodo;
 
 	//Now we will use functions from underscore. Documentation can be found at http://underscorejs.org/
-	matchedTodo = _.findWhere(todos, {id: todoId});
+	matchedTodo = _.findWhere(todos, {
+		id: todoId
+	});
 
-	if(matchedTodo) {
+	if (matchedTodo) {
 		res.json(matchedTodo);
 	} else {
 		res.status(404).send('No match found for todo id of ' + todoId);
 	}
 
- });
+});
 
- //POST /todos
- app.post('/todos', function (req, res) {
- 	var body = req.body;
- 	//console.log('description: ' + body.description);
- 	//Used underscore just to pick the data keys we want to use from the passed object
- 	body = _.pick(body, 'description', 'completed');
+//POST /todos
+app.post('/todos', function(req, res) {
+	var body = req.body;
+	//console.log('description: ' + body.description);
+	//Used underscore just to pick the data keys we want to use from the passed object
+	body = _.pick(body, 'description', 'completed');
 
- 	//Doing data validation using functions from underscore
- 	if(!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
- 		return res.status(400).send('Passed data is not valid,');
- 	}
- 	//Trim the description before we save it.
- 	body.description = body.description.trim();
- 	
- 	body.id = todoNextId;
+	
+	//Trim the description before we save it.
+	body.description = body.description.trim();
 
- 	//todos.push({id: todoNextId, description: body.description, completed: body.completed});
- 	todos.push(body);
- 	//Increment the todoNextId
- 	todoNextId++;
- 	res.json(body);
- });
+	db.todo.create(body).then(function (todo) {
+		res.json(todo.toJSON());
+	}, function (e) {
+		res.status(400).json(e);
+	});
+
+	//My soultion is shown below. It worked
+
+	/*
+	//My solution starts
+	db.todo.create({
+		description: body.description,
+		completed: body.completed
+	}).then(function(todo) {
+		console.log(todo.toJSON());
+		res.status(200).json(todo);
+	}).catch(function(e) {
+		res.status(400).json(e);
+	});
+	//My solution ends
+	*/
+
+	// //Doing data validation using functions from underscore
+	// if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
+	// 	return res.status(400).send('Passed data is not valid,');
+	// }
+	// //Trim the description before we save it.
+	// body.description = body.description.trim();
+
+	// body.id = todoNextId;
+
+	// //todos.push({id: todoNextId, description: body.description, completed: body.completed});
+	// todos.push(body);
+	// //Increment the todoNextId
+	// todoNextId++;
+	// res.json(body);
+});
 
 //DELETE /todos/:id
-app.delete('/todos/:id', function (req, res) {
-	var todoId = parseInt(req.params.id,10);
+app.delete('/todos/:id', function(req, res) {
+	var todoId = parseInt(req.params.id, 10);
 	var matchedTodo;
 
 	//Find the todo item by id
-	matchedTodo = _.findWhere(todos, {id: todoId});
+	matchedTodo = _.findWhere(todos, {
+		id: todoId
+	});
 
-	if(matchedTodo) {
+	if (matchedTodo) {
 		//Delete the found item from list
 		//console.log('about to delete matchedTodo');
 		todos = _.without(todos, matchedTodo);
@@ -106,24 +142,30 @@ app.delete('/todos/:id', function (req, res) {
 		return res.json(matchedTodo);
 	} else {
 		//return res.status(404).send('No match found for id: ' + todoId);
-		res.status(404).json({"error": "No todo found with this id"});
+		res.status(404).json({
+			"error": "No todo found with this id"
+		});
 	}
 });
 
 //PUT /todos/:id
-app.put('/todos/:id', function (req, res) {
+app.put('/todos/:id', function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
-	var matchedTodo = _.findWhere(todos, {id: todoId});
+	var matchedTodo = _.findWhere(todos, {
+		id: todoId
+	});
 
 	var body = _.pick(req.body, 'description', 'completed');
 	var validAttributes = {};
 
 	//If no mathed item found just return error.
-	if(!matchedTodo) {
-		return res.status(404).json({"error":"No todo item found for passed id"});
+	if (!matchedTodo) {
+		return res.status(404).json({
+			"error": "No todo item found for passed id"
+		});
 	}
 
-	if(body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
+	if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
 		//Add to validAttributes
 		validAttributes.completed = body.completed;
 	} else if (body.hasOwnProperty('completed')) {
@@ -131,7 +173,7 @@ app.put('/todos/:id', function (req, res) {
 		return res.status(400).send();
 	}
 
-	if(body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
+	if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
 		//console.log('About to set description in validAttrubutes');
 		validAttributes.description = body.description;
 	} else if (body.hasOwnProperty('description')) {
@@ -149,10 +191,17 @@ app.put('/todos/:id', function (req, res) {
 
 
 
-app.get('/', function (req, res) {
+app.get('/', function(req, res) {
 	res.send('Todo API Root');
 });
 
-app.listen(PORT, function(){
-	console.log('Express server started listening on port ' + PORT + '!');
+
+db.sequelize.sync().then(function() {
+	app.listen(PORT, function() {
+		console.log('Express server started listening on port ' + PORT + '!');
+	});
 });
+
+// app.listen(PORT, function() {
+// 	console.log('Express server started listening on port ' + PORT + '!');
+// });
