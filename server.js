@@ -60,19 +60,22 @@ app.get('/todos', function(req, res) {
 app.get('/todos/:id', function(req, res) {
 	//Since req.params are strings by default converted it to int for comparision using parseInt
 	var todoId = parseInt(req.params.id, 10);
-	var matchedTodo;
+	
+	db.todo.findById(todoId).then (function (todo) {
+		//Note: The double !! mark infornt of an object converts it to its boolean version.
+		//If todo had a value first ! will flip in to FALSE then the second ! will flip it to TRUE
+		//If todo is NULL then ! will flip it to TRUE and then the second ! will flip it to FALSE
+		if (!!todo) {
+			res.json(todo.toJSON());
+		} else {
+			res.status(404).send('No match found for todo id of :' + todoId);
+		}
 
-	//Now we will use functions from underscore. Documentation can be found at http://underscorejs.org/
-	matchedTodo = _.findWhere(todos, {
-		id: todoId
+	}, function (e) {
+		res.status(500).send();
 	});
 
-	if (matchedTodo) {
-		res.json(matchedTodo);
-	} else {
-		res.status(404).send('No match found for todo id of ' + todoId);
-	}
-
+	
 });
 
 //POST /todos
@@ -107,21 +110,7 @@ app.post('/todos', function(req, res) {
 	});
 	//My solution ends
 	*/
-
-	// //Doing data validation using functions from underscore
-	// if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
-	// 	return res.status(400).send('Passed data is not valid,');
-	// }
-	// //Trim the description before we save it.
-	// body.description = body.description.trim();
-
-	// body.id = todoNextId;
-
-	// //todos.push({id: todoNextId, description: body.description, completed: body.completed});
-	// todos.push(body);
-	// //Increment the todoNextId
-	// todoNextId++;
-	// res.json(body);
+	
 });
 
 //DELETE /todos/:id
