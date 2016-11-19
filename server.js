@@ -27,33 +27,35 @@ app.use(bodyParser.json());
 //GET todos?completed=true&q=work
 app.get('/todos', function(req, res) {
 	var queryParams = req.query;
-	var filteredTodos = todos;
-	//console.log(queryParams);
+	var where = {};
+	var filteredTodos = [];
 
 	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
-		//The function where() returns the list of todos where competed is true. See underscodejs.org for details
-		filteredTodos = _.where(filteredTodos, {
-			completed: true
-		});
-	} else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
-		filteredTodos = _.where(filteredTodos, {
-			completed: false
-		});
+		where.completed = true;
+	}  else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
+		where.completed = false;
 	}
 
-	//Use the filteredTodos and search for the items containg description matching the passed description for q value
 	if (queryParams.hasOwnProperty('q') && queryParams.q.trim().length > 0) {
-		//The function filter() returns the list of todos where code in the anonymous function evalutes to true. See underscodejs.org for details
-		filteredTodos = _.filter(filteredTodos, function(todo) {
-			//Note the indexOf() function search in case sensitive so we used toLowerCase() function 
-			return todo.description.toLowerCase().indexOf(queryParams.q.toLowerCase()) > -1
-
-		});
-
+		where.description = {
+			$like: '%' + queryParams.q + '%'
+		}
 	}
 
-
-	res.json(filteredTodos);
+	db.todo.findAll({
+		where
+	}).then (function (todos) {
+		
+		// console.log(todos);
+		if(todos) {
+			res.json(todos);	
+		} else {
+			res.status(404).send('Match not found');
+		}
+	}, function (e) {
+		res.status(500).send();
+	});
+	
 });
 
 //GET todos/:id
