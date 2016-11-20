@@ -120,21 +120,23 @@ app.delete('/todos/:id', function(req, res) {
 	//Since req.params are strings by default converted it to int for comparision using parseInt
 	var todoId = parseInt(req.params.id, 10);
 
-		db.todo.destroy({where: {
+	db.todo.destroy({
+		where: {
 			id: todoId
-		}}).then (function(rowsDeleted) {
-			if(rowsDeleted === 0) {
-				res.status(404).json({
-					error: 'No todo with id'
-				});
+		}
+	}).then(function(rowsDeleted) {
+		if (rowsDeleted === 0) {
+			res.status(404).json({
+				error: 'No todo with id'
+			});
 
-			} else {
-				//If every thing went well and no data is expected to be returned send status 204.
-				res.status(204).send();
-			}
-		}, function() {
-			res.status(500).send();
-		});
+		} else {
+			//If every thing went well and no data is expected to be returned send status 204.
+			res.status(204).send();
+		}
+	}, function() {
+		res.status(500).send();
+	});
 
 	// //***MY solution starts
 	// //I did it the following way and it also worked. Instructor showed the above solution
@@ -177,40 +179,77 @@ app.delete('/todos/:id', function(req, res) {
 //PUT /todos/:id
 app.put('/todos/:id', function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
-	var matchedTodo = _.findWhere(todos, {
-		id: todoId
+	var body = _.pick(req.body, 'description', 'completed');
+	var attributes = {};
+
+	if (body.hasOwnProperty('completed')) {
+		//Add to attributes
+		attributes.completed = body.completed;
+	}
+
+	if (body.hasOwnProperty('description')) {
+		//console.log('About to set description in validAttrubutes');
+		attributes.description = body.description;
+	}
+
+	//Now find by id
+	db.todo.findById(todoId).then(function(todo) {
+		//If record found update it
+		if (todo) {
+			todo.update(attributes).then(function(todo) {
+				//Update function above retuns the instance which was updated.
+				//Now return the updated instance with default status of 200
+				res.json(todo.toJSON());
+			}, function(e) {
+				//Validation error will be sent back with status 400 (i.e. Bad Request)
+				res.status(400).json(e);
+			});
+		} else {
+			//Retunr status 404 (i.e. not found)
+			res.status(404).send();
+		}
+
+	}, function() {
+		res.status(500).send();
 	});
 
-	var body = _.pick(req.body, 'description', 'completed');
-	var validAttributes = {};
 
-	//If no mathed item found just return error.
-	if (!matchedTodo) {
-		return res.status(404).json({
-			"error": "No todo item found for passed id"
-		});
-	}
 
-	if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-		//Add to validAttributes
-		validAttributes.completed = body.completed;
-	} else if (body.hasOwnProperty('completed')) {
-		//Something is wrong
-		return res.status(400).send();
-	}
 
-	if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
-		//console.log('About to set description in validAttrubutes');
-		validAttributes.description = body.description;
-	} else if (body.hasOwnProperty('description')) {
-		//Something is wrong
-		console.log('Somthing went wrong');
-		return res.status(400).send();
-	}
 
-	//Every thing seems to be in order. Update the todo item using extends method from underscore
-	_.extend(matchedTodo, validAttributes);
-	res.json(matchedTodo);
+	// var matchedTodo = _.findWhere(todos, {
+	// 	id: todoId
+	// });
+
+	// var validAttributes = {};
+
+	// //If no mathed item found just return error.
+	// if (!matchedTodo) {
+	// 	return res.status(404).json({
+	// 		"error": "No todo item found for passed id"
+	// 	});
+	// }
+
+	// if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
+	// 	//Add to validAttributes
+	// 	validAttributes.completed = body.completed;
+	// } else if (body.hasOwnProperty('completed')) {
+	// 	//Something is wrong
+	// 	return res.status(400).send();
+	// }
+
+	// if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
+	// 	//console.log('About to set description in validAttrubutes');
+	// 	validAttributes.description = body.description;
+	// } else if (body.hasOwnProperty('description')) {
+	// 	//Something is wrong
+	// 	console.log('Somthing went wrong');
+	// 	return res.status(400).send();
+	// }
+
+	// //Every thing seems to be in order. Update the todo item using extends method from underscore
+	// _.extend(matchedTodo, validAttributes);
+	// res.json(matchedTodo);
 
 });
 
