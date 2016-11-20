@@ -254,7 +254,20 @@ app.put('/todos/:id', function(req, res) {
 });
 
 
+//POST /users
+app.post('/users', function (req, res) {
+	var body = req.body;
+	//console.log('email: ' + body.email);
+	//Used underscore just to pick the data keys we want to use from the passed object
+	body = _.pick(body, 'email', 'password');
 
+
+	db.user.create(body).then(function(user) {
+		res.json(user.toJSON());
+	}, function(e) {
+		res.status(400).json(e);
+	});
+});
 
 app.get('/', function(req, res) {
 	res.send('Todo API Root');

@@ -20,6 +20,7 @@ var db = {};
 
 //sequelize.import function lets you imort modules from another file
 db.todo = sequelize.import(__dirname + '/models/todo.js');
+db.user = sequelize.import(__dirname + '/models/user.js');
 //Added sequelize instance
 db.sequelize = sequelize;
 //Added sequelize library
