@@ -32,7 +32,7 @@ app.get('/todos', function(req, res) {
 
 	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
 		where.completed = true;
-	}  else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
+	} else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
 		where.completed = false;
 	}
 
@@ -43,27 +43,27 @@ app.get('/todos', function(req, res) {
 	}
 
 	db.todo.findAll({
-		where
-	}).then (function (todos) {
-		
+		where: where
+	}).then(function(todos) {
+
 		// console.log(todos);
-		if(todos) {
-			res.json(todos);	
+		if (todos) {
+			res.json(todos);
 		} else {
 			res.status(404).send('Match not found');
 		}
-	}, function (e) {
+	}, function(e) {
 		res.status(500).send();
 	});
-	
+
 });
 
 //GET todos/:id
 app.get('/todos/:id', function(req, res) {
 	//Since req.params are strings by default converted it to int for comparision using parseInt
 	var todoId = parseInt(req.params.id, 10);
-	
-	db.todo.findById(todoId).then (function (todo) {
+
+	db.todo.findById(todoId).then(function(todo) {
 		//Note: The double !! mark infornt of an object converts it to its boolean version.
 		//If todo had a value first ! will flip in to FALSE then the second ! will flip it to TRUE
 		//If todo is NULL then ! will flip it to TRUE and then the second ! will flip it to FALSE
@@ -73,11 +73,11 @@ app.get('/todos/:id', function(req, res) {
 			res.status(404).send('No match found for todo id of :' + todoId);
 		}
 
-	}, function (e) {
+	}, function(e) {
 		res.status(500).send();
 	});
 
-	
+
 });
 
 //POST /todos
@@ -87,13 +87,13 @@ app.post('/todos', function(req, res) {
 	//Used underscore just to pick the data keys we want to use from the passed object
 	body = _.pick(body, 'description', 'completed');
 
-	
+
 	//Trim the description before we save it.
 	body.description = body.description.trim();
 
-	db.todo.create(body).then(function (todo) {
+	db.todo.create(body).then(function(todo) {
 		res.json(todo.toJSON());
-	}, function (e) {
+	}, function(e) {
 		res.status(400).json(e);
 	});
 
@@ -112,31 +112,66 @@ app.post('/todos', function(req, res) {
 	});
 	//My solution ends
 	*/
-	
+
 });
 
 //DELETE /todos/:id
 app.delete('/todos/:id', function(req, res) {
+	//Since req.params are strings by default converted it to int for comparision using parseInt
 	var todoId = parseInt(req.params.id, 10);
-	var matchedTodo;
 
-	//Find the todo item by id
-	matchedTodo = _.findWhere(todos, {
-		id: todoId
-	});
+		db.todo.destroy({where: {
+			id: todoId
+		}}).then (function(rowsDeleted) {
+			if(rowsDeleted === 0) {
+				res.status(404).json({
+					error: 'No todo with id'
+				});
 
-	if (matchedTodo) {
-		//Delete the found item from list
-		//console.log('about to delete matchedTodo');
-		todos = _.without(todos, matchedTodo);
-		//retun the deleted item
-		return res.json(matchedTodo);
-	} else {
-		//return res.status(404).send('No match found for id: ' + todoId);
-		res.status(404).json({
-			"error": "No todo found with this id"
+			} else {
+				//If every thing went well and no data is expected to be returned send status 204.
+				res.status(204).send();
+			}
+		}, function() {
+			res.status(500).send();
 		});
-	}
+
+	// //***MY solution starts
+	// //I did it the following way and it also worked. Instructor showed the above solution
+	// db.todo.findById(todoId).then(function(todo) {
+	// 	//Note: The double !! mark infornt of an object converts it to its boolean version.
+	// 	//If todo had a value first ! will flip in to FALSE then the second ! will flip it to TRUE
+	// 	//If todo is NULL then ! will flip it to TRUE and then the second ! will flip it to FALSE
+	// 	if (!!todo) {
+	// 		todo.destroy();
+	// 		//Retunr the object which was just deleted
+	// 		res.json(todo.toJSON());
+	// 	} else {
+	// 		res.status(404).send('No match found for todo id of :' + todoId);
+	// 	}
+	// }, function(e) {
+	// 	res.status(500).send();
+	// });
+	// //****My Solution ends
+
+	//var matchedTodo;
+	//Find the todo item by id
+	// matchedTodo = _.findWhere(todos, {
+	// 	id: todoId
+	// });
+
+	// if (matchedTodo) {
+	// 	//Delete the found item from list
+	// 	//console.log('about to delete matchedTodo');
+	// 	todos = _.without(todos, matchedTodo);
+	// 	//retun the deleted item
+	// 	return res.json(matchedTodo);
+	// } else {
+	// 	//return res.status(404).send('No match found for id: ' + todoId);
+	// 	res.status(404).json({
+	// 		"error": "No todo found with this id"
+	// 	});
+	// }
 });
 
 //PUT /todos/:id
