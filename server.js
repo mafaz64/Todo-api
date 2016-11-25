@@ -263,7 +263,10 @@ app.post('/users', function (req, res) {
 
 
 	db.user.create(body).then(function(user) {
-		res.json(user.toJSON());
+		//res.json(user.toJSON());
+		//Commented the above line and called the instanceMethod of toPublicJSON in user.js
+		//This allowed me to not send back salt and password_hash back to the user
+		res.json(user.toPublicJSON());
 	}, function(e) {
 		res.status(400).json(e);
 	});
@@ -274,7 +277,10 @@ app.get('/', function(req, res) {
 });
 
 
-db.sequelize.sync().then(function() {
+db.sequelize.sync(
+	//Note: Passing this object {force:true} to sync() method will cause the existing tables to be droped and recreated.
+	//{force:true}
+	).then(function() {
 	app.listen(PORT, function() {
 		console.log('Express server started listening on port ' + PORT + '!');
 	});
