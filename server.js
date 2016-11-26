@@ -231,7 +231,17 @@ app.post('/users/login', function(req, res) {
 	db.user.authenticate(body).then(function(user) {
 		//res.json(user.toJSON());
 		//Call instance method toPublicJSON() to show desired filed only.
-		res.json(user.toPublicJSON());
+		//res.json(user.toPublicJSON());
+		var token = user.generateToken('authentication');
+
+		if (token) {
+			//To set a header in the response we call header. header takes two args
+			// 1) key which we set to 'Auth' 2)value which we set to generated token
+			res.header('Auth', user.generateToken('authentication')).json(user.toPublicJSON());
+		} else {
+			res.status(401).send();
+		}
+
 
 	}, function() {
 		res.status(401).send();

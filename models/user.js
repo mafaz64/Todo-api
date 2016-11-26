@@ -2,6 +2,8 @@
 //This is how it is supposed to be done.
 var bcrypt = require('bcrypt');
 var _ = require('underscore');
+var jwt = require('jsonwebtoken');
+var cryptojs = require('crypto-js');
 
 module.exports = function(sequelize, DataTypes) {
 	var user = sequelize.define('user', {
@@ -83,6 +85,28 @@ module.exports = function(sequelize, DataTypes) {
 						var json = this.toJSON();
 						//Just pick the fields we want to show. We do not want to show salt, password_hash
 						return _.pick(json, 'id', 'email', 'createdAt', 'updatedAt');
+					},
+					generateToken: function(type) {
+						if(!_.isString(type)) {
+							return undefined;
+						}
+
+						try {
+							//Crteaed a JSON string to encrypt. Passed object to stringify method which consists of user id and type
+							var stringData = JSON.stringify({id: this.get('id'), type:type});
+							//Encrypt the JSON sting data using encrypt method which takes string to encrypt and a seceret password. I used abc123!
+							var encryptedData = cryptojs.AES.encrypt(stringData, 'abc123!').toString();
+							//Used the sing method of jwt (i.e. jsonwebtoken) which takes two args. 1) Object 2) the secret password.
+							//I used xyz123! for password. The object was set as {token:encryptedData}
+							var token = jwt.sign({
+								token: encryptedData
+								}, 'xyz123!');
+							return token;
+						} catch (e) {
+							//This will log the error on the console
+							console.error(e);
+							return undefined;
+						}
 					}
 				}
 	});
