@@ -6,20 +6,7 @@ var todos = [];
 var todoNextId = 1;
 var _ = require('underscore');
 var db = require('./db.js');
-
-// var todos = [{
-// 	id: 1,
-// 	description: 'Meet mom for lunch',
-// 	completed: false
-// }, {
-// 	id: 2,
-// 	description: 'Go to super market',
-// 	completed: false
-// }, {
-// 	id: 3,
-// 	description: 'Pay MLGW bill',
-// 	completed: true
-// }];
+var bcrypt = require('bcrypt');
 
 //Now any time a json request comes in express will be able to parse it and we will be able to access it via req.body
 app.use(bodyParser.json());
@@ -214,48 +201,11 @@ app.put('/todos/:id', function(req, res) {
 	});
 
 
-
-
-
-	// var matchedTodo = _.findWhere(todos, {
-	// 	id: todoId
-	// });
-
-	// var validAttributes = {};
-
-	// //If no mathed item found just return error.
-	// if (!matchedTodo) {
-	// 	return res.status(404).json({
-	// 		"error": "No todo item found for passed id"
-	// 	});
-	// }
-
-	// if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-	// 	//Add to validAttributes
-	// 	validAttributes.completed = body.completed;
-	// } else if (body.hasOwnProperty('completed')) {
-	// 	//Something is wrong
-	// 	return res.status(400).send();
-	// }
-
-	// if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
-	// 	//console.log('About to set description in validAttrubutes');
-	// 	validAttributes.description = body.description;
-	// } else if (body.hasOwnProperty('description')) {
-	// 	//Something is wrong
-	// 	console.log('Somthing went wrong');
-	// 	return res.status(400).send();
-	// }
-
-	// //Every thing seems to be in order. Update the todo item using extends method from underscore
-	// _.extend(matchedTodo, validAttributes);
-	// res.json(matchedTodo);
-
 });
 
 
 //POST /users
-app.post('/users', function (req, res) {
+app.post('/users', function(req, res) {
 	var body = req.body;
 	//console.log('email: ' + body.email);
 	//Used underscore just to pick the data keys we want to use from the passed object
@@ -272,6 +222,23 @@ app.post('/users', function (req, res) {
 	});
 });
 
+//POST /users/login
+app.post('/users/login', function(req, res) {
+	var body = req.body;
+	body = _.pick(body, 'email', 'password');
+
+	//Call the class method to authenticate
+	db.user.authenticate(body).then(function(user) {
+		//res.json(user.toJSON());
+		//Call instance method toPublicJSON() to show desired filed only.
+		res.json(user.toPublicJSON());
+
+	}, function() {
+		res.status(401).send();
+	});
+
+});
+
 app.get('/', function(req, res) {
 	res.send('Todo API Root');
 });
@@ -279,8 +246,8 @@ app.get('/', function(req, res) {
 
 db.sequelize.sync(
 	//Note: Passing this object {force:true} to sync() method will cause the existing tables to be droped and recreated.
-	//{force:true}
-	).then(function() {
+	{force:true}
+).then(function() {
 	app.listen(PORT, function() {
 		console.log('Express server started listening on port ' + PORT + '!');
 	});
