@@ -7,12 +7,14 @@ var todoNextId = 1;
 var _ = require('underscore');
 var db = require('./db.js');
 var bcrypt = require('bcrypt');
+//Note: Since middleware.js has a function which takes db as arg we can pass it right here as shown on the line below
+var middleware = require('./middleware.js')(db)
 
 //Now any time a json request comes in express will be able to parse it and we will be able to access it via req.body
 app.use(bodyParser.json());
 
 //GET todos?completed=true&q=work
-app.get('/todos', function(req, res) {
+app.get('/todos', middleware.requireAuthentication, function(req, res) {
 	var queryParams = req.query;
 	var where = {};
 	var filteredTodos = [];
@@ -46,7 +48,7 @@ app.get('/todos', function(req, res) {
 });
 
 //GET todos/:id
-app.get('/todos/:id', function(req, res) {
+app.get('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	//Since req.params are strings by default converted it to int for comparision using parseInt
 	var todoId = parseInt(req.params.id, 10);
 
@@ -68,7 +70,7 @@ app.get('/todos/:id', function(req, res) {
 });
 
 //POST /todos
-app.post('/todos', function(req, res) {
+app.post('/todos', middleware.requireAuthentication, function(req, res) {
 	var body = req.body;
 	//console.log('description: ' + body.description);
 	//Used underscore just to pick the data keys we want to use from the passed object
@@ -103,7 +105,7 @@ app.post('/todos', function(req, res) {
 });
 
 //DELETE /todos/:id
-app.delete('/todos/:id', function(req, res) {
+app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	//Since req.params are strings by default converted it to int for comparision using parseInt
 	var todoId = parseInt(req.params.id, 10);
 
@@ -164,7 +166,7 @@ app.delete('/todos/:id', function(req, res) {
 });
 
 //PUT /todos/:id
-app.put('/todos/:id', function(req, res) {
+app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
 	var body = _.pick(req.body, 'description', 'completed');
 	var attributes = {};

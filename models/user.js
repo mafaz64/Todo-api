@@ -77,7 +77,36 @@ module.exports = function(sequelize, DataTypes) {
 
 						});
 
+					},
+			findByToken: function(token) {
+				return new Promise(function (resolve, reject) {
+					try {
+						//verify method takes two ars, signedJWT (i.e. token in our case) and secret password to verify that it was not tampred with
+						var decodedJWT = jwt.verify(token, 'xyz123!');
+						//Decrypt. Passed the encryptedData which was stored as token in signedJWT
+						var bytes = cryptojs.AES.decrypt(decodedJWT.token, 'abc123!');
+						var tokenData = JSON.parse(bytes.toString(cryptojs.enc.Utf8));
+
+						user.findById(tokenData.id).then(function(user) {
+							if(user) {
+								resolve(user);
+							} else {
+								reject();
+							}
+						},
+						function (e) {
+							console.error(e);
+							reject();
+						});
+
+					} catch (e) {
+						console.error(e);
+						reject();
 					}
+				});
+
+				}
+
 				},
 				instanceMethods: {
 					toPublicJSON: function() {
