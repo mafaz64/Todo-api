@@ -76,22 +76,26 @@ app.post('/todos', middleware.requireAuthentication, function(req, res) {
 	//Used underscore just to pick the data keys we want to use from the passed object
 	body = _.pick(body, 'description', 'completed');
 
-
 	//Trim the description before we save it.
 	body.description = body.description.trim();
 
 	db.todo.create(body).then(function(todo) {
-		res.json(todo.toJSON());
+		//res.json(todo.toJSON());
+		//Note: Since the method middleware.requireAuthentication returned a user in req we used it to add todo for the user 
+		req.user.addTodo(todo).then(function() {
+			//Called reload to make sure we get the todo from the db after the association with the user was added to it.
+			return todo.reload();
+		}).then(function(todo) {
+			res.json(todo.toJSON());
+		});
 	}, function(e) {
 		res.status(400).json(e);
 	});
 
 	//My soultion is shown below. It worked
-
 	/*
 	//My solution starts
-	db.todo.create({
-		description: body.description,
+	db.todo.create({ description: body.description,
 		completed: body.completed
 	}).then(function(todo) {
 		console.log(todo.toJSON());
@@ -99,8 +103,7 @@ app.post('/todos', middleware.requireAuthentication, function(req, res) {
 	}).catch(function(e) {
 		res.status(400).json(e);
 	});
-	//My solution ends
-	*/
+	//My solution ends 	*/
 
 });
 

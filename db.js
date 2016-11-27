@@ -13,8 +13,6 @@ if (env ==='production') {
 	});
 }
 
-
-
 //We will attach multiple properties with db object and eventual export it from db.js
 var db = {};
 
@@ -25,6 +23,11 @@ db.user = sequelize.import(__dirname + '/models/user.js');
 db.sequelize = sequelize;
 //Added sequelize library
 db.Sequelize = Sequelize;
+
+//Adding associateion
+db.todo.belongsTo(db.user);
+//Adding association
+db.user.hasMany(db.todo);
 
 //This is how we can export multiple things from a file
 //We will set object db with multiple models and export the db object

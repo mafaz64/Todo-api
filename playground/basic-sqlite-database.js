@@ -23,13 +23,54 @@ var Todo = sequelize.define('todo', {
 })
 
 
+//Note: define() function takes two args. 'user' is my model name and 
+//then I provide an object whcih defines the structure of my user
+var User = sequelize.define('user', {
+	email: {
+		type: Sequelize.STRING
+	}
+})
+
+//Defining relations
+Todo.belongsTo(User);
+User.hasMany(Todo);
+
 sequelize.sync({
 	//Note: The following line force:true causes the table to be droped and recreated every time this program runs.
 	//force: true
 }).then(function() {
 	console.log('Everything is synched');
 
-	return Todo.findById(2);
+	
+//Change1: My change starts
+//Create a user then create a task and associate the task with the user
+	// User.create({
+	// 	email: 'mafaz@excite.com'
+	// }).then (function() {
+	// 	return Todo.create({
+	// 		description: 'Clean the yard.'
+	// 	});
+	// }).then (function(todo) {
+	// 	User.findById(1).then(function(user) {
+	// 		user.addTodo(todo);
+			
+	// 	});
+	// });
+//Change1: My change ends	
+
+//Change2: My chamge starts
+	User.findById(1).then(function(user) {
+		var whereClause = {completed: true}
+		user.getTodos({where: whereClause}).then(function(todos) {
+			todos.forEach(function(todo) {
+				console.log(todo.toJSON());
+			});
+		});
+	});
+
+//Change2: My chamge ends
+
+	//return Todo.findById(2);
 
 	// Todo.create({
 	// 	description: 'Walk my dog',
