@@ -17,7 +17,10 @@ app.use(bodyParser.json());
 app.get('/todos', middleware.requireAuthentication, function(req, res) {
 	var queryParams = req.query;
 	var where = {};
-	var filteredTodos = [];
+	where.userId = req.user.get('id');
+	//var where = {userId: req.user.get('id')};
+	//var filteredTodos = [];
+	
 
 	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
 		where.completed = true;
@@ -31,6 +34,7 @@ app.get('/todos', middleware.requireAuthentication, function(req, res) {
 		}
 	}
 
+	
 	db.todo.findAll({
 		where: where
 	}).then(function(todos) {
@@ -51,8 +55,12 @@ app.get('/todos', middleware.requireAuthentication, function(req, res) {
 app.get('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	//Since req.params are strings by default converted it to int for comparision using parseInt
 	var todoId = parseInt(req.params.id, 10);
+	where = {};
 
-	db.todo.findById(todoId).then(function(todo) {
+	//db.todo.findById(todoId).then(function(todo) {
+	where.userId = req.user.get('id');
+	where.id = todoId;
+	db.todo.findOne({where: where}).then(function(todo) {
 		//Note: The double !! mark infornt of an object converts it to its boolean version.
 		//If todo had a value first ! will flip in to FALSE then the second ! will flip it to TRUE
 		//If todo is NULL then ! will flip it to TRUE and then the second ! will flip it to FALSE
@@ -80,9 +88,9 @@ app.post('/todos', middleware.requireAuthentication, function(req, res) {
 	body.description = body.description.trim();
 
 	db.todo.create(body).then(function(todo) {
-		//res.json(todo.toJSON());
-		//Note: Since the method middleware.requireAuthentication returned a user in req we used it to add todo for the user 
-		req.user.addTodo(todo).then(function() {
+			//res.json(todo.toJSON());
+			//Note: Since the method middleware.requireAuthentication returned a user in req we used it to add todo for the user 
+			req.user.addTodo(todo).then(function() {
 			//Called reload to make sure we get the todo from the db after the association with the user was added to it.
 			return todo.reload();
 		}).then(function(todo) {
@@ -114,7 +122,8 @@ app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
 
 	db.todo.destroy({
 		where: {
-			id: todoId
+			id: todoId,
+			userId: req.user.get('id')
 		}
 	}).then(function(rowsDeleted) {
 		if (rowsDeleted === 0) {
@@ -173,6 +182,8 @@ app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
 	var body = _.pick(req.body, 'description', 'completed');
 	var attributes = {};
+	where = {id: todoId, 
+			 userId: req.user.get('id')};
 
 	if (body.hasOwnProperty('completed')) {
 		//Add to attributes
@@ -184,8 +195,11 @@ app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 		attributes.description = body.description;
 	}
 
+
 	//Now find by id
-	db.todo.findById(todoId).then(function(todo) {
+	//db.todo.findById(todoId).then(function(todo) {
+	//Replaced the above findById method with findOne whith where object
+	db.todo.findOne({where: where}).then(function(todo) {
 		//If record found update it
 		if (todo) {
 			todo.update(attributes).then(function(todo) {
