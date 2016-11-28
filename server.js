@@ -256,7 +256,7 @@ app.post('/users/login', function(req, res) {
 		if (token) {
 			//To set a header in the response we call header. header takes two args
 			// 1) key which we set to 'Auth' 2)value which we set to generated token
-			res.header('Auth', user.generateToken('authentication')).json(user.toPublicJSON());
+			res.header('Auth', token).json(user.toPublicJSON());
 		} else {
 			res.status(401).send();
 		}
