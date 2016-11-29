@@ -245,27 +245,40 @@ app.post('/users', function(req, res) {
 app.post('/users/login', function(req, res) {
 	var body = req.body;
 	body = _.pick(body, 'email', 'password');
+	var userInstance;
 
 	//Call the class method to authenticate
 	db.user.authenticate(body).then(function(user) {
 		//res.json(user.toJSON());
 		//Call instance method toPublicJSON() to show desired filed only.
 		//res.json(user.toPublicJSON());
+		
 		var token = user.generateToken('authentication');
-
-		if (token) {
-			//To set a header in the response we call header. header takes two args
-			// 1) key which we set to 'Auth' 2)value which we set to generated token
-			res.header('Auth', token).json(user.toPublicJSON());
-		} else {
-			res.status(401).send();
-		}
-
-
-	}, function() {
+		userInstance = user;
+		
+		return db.token.create({
+			token:token
+		});
+	
+	}).then(function(tokenInstance) {
+		console.log('tokencreated in table');
+		//To set a header in the response we call header. header takes two args
+		// 1) key which we set to 'Auth' 2)value which we set to generated token
+		res.header('Auth', tokenInstance.get('token')).json(userInstance.toPublicJSON());
+	}, function (e) {
+		//console.error(e);
 		res.status(401).send();
 	});
 
+});
+
+//DELETE /users/login
+app.delete('/users/login', middleware.requireAuthentication, function(req, res) {
+	req.token.destroy().then(function() {
+		res.status(204).send();
+	}).catch (function() {
+		res.status(500).send();
+	})
 });
 
 app.get('/', function(req, res) {
